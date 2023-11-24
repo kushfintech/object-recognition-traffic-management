@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+{% load form_tags %}
+{% load static %}
+{% block title %}
+    Recognition Objects
+{% endblock title %}
+{% block extra_head %}
+    <link rel='stylesheet' href="{% static 'scss/recognition-styles.css' %}">
+    <script src="{% static 'js/recognition-main.js' %}"></script>
+{% endblock extra_head %}
+{% block content %}
+    <div class="m-auto">
+        <h1 class="text-3xl text-center p-2 shadow-lg rounded-lg font-bold py-8 text-gray-600 ring-1 ring-gray-900/5">
+            Object Detection and Recognition for Traffic Management System using Yolo8 and Open CV
+        </h1>
+    </div>
+    <div id="top" class="m-auto flex flex-col-1 justify-center space-6">
+        <div class="shadow-lg rounded-lg m-6 flex flex-col items-center flex-col-1 p-8">
+            <video id="myVideo" class="relative " width="640" height="360" muted>
+                <source src="{% static 'media_saved/videos/cars-4.mp4' %}" type="video/mp4">
+                Your browser does not support the video tag.
+            </video>
+            <canvas id="myCanvas" class="absolute z-1" width="640" height="360"></canvas>
+            <div class="flex">
+                <input type="range"
+                       id="rangeInput"
+                       class="w-96 "
+                       min="0"
+                       max="100"
+                       step="1"
+                       value="0">
+                <div class="w-8" id="playOrStopVideo">
+                    <?xml version="1.0" encoding="utf-8"?>
+                    <!-- Uploaded to: SVG Repo, www.svgrepo.com, Generator: SVG Repo Mixer Tools -->
+                    <svg version="1.1"
+                         xmlns="http://www.w3.org/2000/svg"
+                         xmlns:xlink="http://www.w3.org/1999/xlink"
+                         viewBox="0 0 64 64"
+                         enable-background="new 0 0 64 64"
+                         xml:space="preserve">
+                        <g id="Play">
+                        <path d="M46.0136986,31.1054993L25.1973,20.6973c-0.3096008-0.1532993-0.6777992-0.1387005-0.9727001,0.0438995 C23.9297009,20.9237995,23.75,21.2451,23.75,21.5918007v20.8163986c0,0.3467026,0.1797009,0.6679993,0.4745998,0.8506012 C24.3848,43.3583984,24.5674,43.4081993,24.75,43.4081993c0.1532993,0,0.3057003-0.035099,0.4473-0.1054001l20.8163986-10.4081993 c0.3388023-0.1699982,0.5527-0.5157013,0.5527-0.8945999C46.5663986,31.6210995,46.3525009,31.2754002,46.0136986,31.1054993z M25.75,40.7901001v-17.580101L43.330101,32L25.75,40.7901001z" />
+                        <path d="M32,0C14.3268995,0,0,14.3268995,0,32s14.3268995,32,32,32s32-14.3269005,32-32S49.6730995,0,32,0z M32,62 C15.4579,62,2,48.542099,2,32C2,15.4580002,15.4579,2,32,2c16.5419998,0,30,13.4580002,30,30C62,48.542099,48.5419998,62,32,62z" />
+                        </g>
+                    </svg>
+                </div>
+            </div>
+        </div>
+        <div class="flex flex-col gap-6 flex-col-1 shadow-lg rounded-lg m-6">
+            <div id="FormUploadVideoPanel"
+                 class="flex gap-6 p-6 rounded-lg flex-col flex-col-1">
+                <h2 class="text-lg text-gray-800 m-auto font-bold">Upload Video To Detect</h2>
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <!-- Title Field -->
+                    <div class="mb-4">
+                        <label for="{{ form.title.id_for_label }}"
+                               class="block text-sm font-medium text-gray-700">{{ form.title.label }}</label>
+                        {{ form.title|add_class:"mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-gray-500 focus:border-gray-500 sm:text-sm" }}
+                        {{ form.title.errors }}
+                    </div>
+                    <!-- Video File Field with Tailwind CSS -->
+                    <div class="col-span-1 sm:col-span-2">
+                        <label for="{{ form.video_file.id_for_label }}"
+                               class="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 dark:hover:bg-bray-800 hover:bg-gray-100 ">
+                            <div class="flex flex-col items-center justify-center pt-5 pb-6">
+                                <!-- SVG and text -->
+                                <svg class="w-8 h-8 mb-4 text-gray-500"
+                                     aria-hidden="true"
+                                     xmlns="http://www.w3.org/2000/svg"
+                                     fill="none"
+                                     viewBox="0 0 20 16">
+                                    <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2" />
+                                </svg>
+                                <p class="mb-2 text-sm text-gray-500">
+                                    <span id="click-to-upload" class="font-semibold">Click to upload video</span>
+                                    <div id="file-name-display" class="text-lg text-gray-500 font-bold m-0"></div>
+                                </p>
+                                <p class="text-xs text-gray-500">MP4 or WebM</p>
+                            </div>
+                            {{ form.video_file }}
+                        </label>
+                        {{ form.video_file.errors }}
+                    </div>
+                    <button type="submit"
+                            class="w-full m-auto my-4 px-4 py-2 bg-gray-500 text-white rounded hover:bg-blue-600">
+                        Upload
+                    </button>
+                </form>
+            </div>
+            <div id="VideosDetectedPanel"
+                 class="flex gap-6 justify-start p-6 rounded-lg h-48 flex-col flex-col-2">
+                <h2 class="text-lg text-gray-800 m-auto font-bold">Videos Detected</h2>
+                <div id="VideosDetectedContainer"
+                     class="flex overflow-auto gap-6 flex-wrap">
+                    {% for detected in detected_objs %}
+                        <div class="flex flex-col">
+                            {{ detected.title }}
+                            <video width="120">
+                                <source src="{% static 'media_saved/videos/'|add:detected.filename|safe %}"
+                                        type="video/mp4">
+                                Your browser does not support the video tag.
+                            </video>
+                            <span style="display:none">{{ detected.pk }}</span>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="bottom" class="m-auto flex-2 flex w-full gap-6">
+        <div id="detectedObjectsRankingPanel"
+             class="shadow-lg rounded-lg m-6 p-6 rounded-lg w-[20%]">
+            <h2 class="text-lg text-gray-800 m-auto font-bold">Ranking Labels</h2>
+            <div id="detectedObjectsRankingContainer"></div>
+        </div>
+        <div id="detectedObjectsPanel"
+             class="shadow-lg rounded-lg m-6 p-6 rounded-lg w-[80%] overflow-auto">
+            <h2 class="text-lg text-gray-800 m-auto font-bold ">Detected Objects</h2>
+            <div id="detectedObjectsContainer" class="flex flex-wrap "></div>
+        </div>
+    </div>
+    <script>
+        // JavaScript to update the filename display
+        document.getElementById('{{ form.video_file.id_for_label }}').addEventListener('change', function() {
+            var fileNameDisplay = document.getElementById('file-name-display');
+            var clickToUpload = document.getElementById('click-to-upload');
+            fileNameDisplay.textContent = this.files.length > 0 ? this.files[0].name : 'No file selected';
+            if(fileNameDisplay.textContent = this.files.length > 0){
+                fileNameDisplay.textContent = this.files[0].name;
+            }
+        });
+    </script>
+{% endblock content %}
